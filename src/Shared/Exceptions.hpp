@@ -15,10 +15,4 @@ public:
 private:
   std::string m_message;
 };
-
-class ScopedFdException : public Exception {
-public:
-  explicit ScopedFdException(std::string message)
-      : Exception(std::move(message)) {}
-};
 } // namespace Jetpack::Shared::Exceptions
