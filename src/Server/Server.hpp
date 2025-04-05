@@ -12,6 +12,9 @@ public:
       : m_port(port), m_mapFile(mapFile) {}
   ~GameServer();
 
+  void start();
+  void stop();
+
 private:
   uint16_t m_port;
 
@@ -19,5 +22,7 @@ private:
 
   bool m_running = false;
   bool m_gameStarted = false;
+
+  int m_serverSocket = -1;
 };
 } // namespace Jetpack::Server

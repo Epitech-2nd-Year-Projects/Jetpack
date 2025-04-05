@@ -15,4 +15,10 @@ public:
 private:
   std::string m_message;
 };
+
+class SocketException : public Exception {
+public:
+  explicit SocketException(const std::string &message)
+      : Exception("Socket error: " + message) {}
+};
 } // namespace Jetpack::Shared::Exceptions
