@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <vector>
 
 namespace Jetpack::Shared::Protocol {
 enum class TileType : uint8_t {
@@ -19,6 +20,13 @@ struct Position {
   bool operator==(const Position &other) const {
     return x == other.x && y == other.y;
   }
+};
+
+struct GameMap {
+  int width = 0;
+  int height = 0;
+  std::vector<std::vector<TileType>> tiles;
+  std::vector<Position> coinPositions;
 };
 
 enum class MessageType : uint8_t {
