@@ -21,4 +21,16 @@ public:
   explicit SocketException(const std::string &message)
       : Exception("Socket error: " + message) {}
 };
+
+class GameServerException : public Exception {
+public:
+  explicit GameServerException(const std::string &message)
+      : Exception("Game server error: " + message) {}
+};
+
+class MapLoaderException : public GameServerException {
+public:
+  explicit MapLoaderException(const std::string &message)
+      : GameServerException("Map loader error: " + message) {}
+};
 } // namespace Jetpack::Shared::Exceptions

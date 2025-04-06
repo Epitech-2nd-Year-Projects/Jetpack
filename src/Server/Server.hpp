@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../Shared/Protocol.hpp"
 #include <cstdint>
 #include <filesystem>
 #include <string>
@@ -16,9 +17,13 @@ public:
   void stop();
 
 private:
+  void loadMap();
+
+private:
   uint16_t m_port;
 
   std::filesystem::path m_mapFile;
+  Jetpack::Shared::Protocol::GameMap m_map;
 
   bool m_running = false;
   bool m_gameStarted = false;
