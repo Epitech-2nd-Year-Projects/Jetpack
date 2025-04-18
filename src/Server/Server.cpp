@@ -165,7 +165,6 @@ void Jetpack::Server::GameServer::acceptNewClient() {
   pollfd pfd = {clientSocket, POLLIN, 0};
   m_pollfds.push_back(pfd);
 
-  std::lock_guard<std::mutex> lock(m_playersMutex);
   int newPlayerId = m_players.size() + 1;
   m_players.emplace(clientSocket,
                     Shared::Protocol::Player(clientSocket, newPlayerId));
@@ -180,8 +179,6 @@ void Jetpack::Server::GameServer::acceptNewClient() {
 }
 
 void Jetpack::Server::GameServer::handleClientDisconnect(int clientSocket) {
-  std::lock_guard<std::mutex> lock(m_playersMutex);
-
   auto it = m_players.find(clientSocket);
   if (it != m_players.end()) {
     m_players.erase(it);
@@ -267,7 +264,6 @@ void Jetpack::Server::GameServer::handlePlayerInput(int clientSocket,
 
   bool isJetpacking = data[1] != 0;
 
-  std::lock_guard<std::mutex> lock(m_playersMutex);
   auto it = m_players.find(clientSocket);
   if (it != m_players.end() &&
       it->second.getState() == Shared::Protocol::PlayerState::PLAYING) {
@@ -327,8 +323,6 @@ void Jetpack::Server::GameServer::sendMapData(int clientSocket) {
 }
 
 void Jetpack::Server::GameServer::checkGameStart() {
-  std::lock_guard<std::mutex> lock(m_playersMutex);
-
   if (m_gameState != Shared::Protocol::GameState::WAITING_FOR_PLAYERS) {
     return;
   }
@@ -349,8 +343,6 @@ void Jetpack::Server::GameServer::updateGameState() {
   if (m_gameState != Shared::Protocol::GameState::IN_PROGRESS) {
     return;
   }
-
-  std::lock_guard<std::mutex> lock(m_playersMutex);
 
   updatePlayers();
   checkCollisions();

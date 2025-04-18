@@ -3,7 +3,6 @@
 #include "../Shared/Protocol.hpp"
 #include "Broadcaster.hpp"
 #include <filesystem>
-#include <mutex>
 #include <poll.h>
 #include <string>
 #include <unistd.h>
@@ -56,7 +55,6 @@ private:
   std::vector<pollfd> m_pollfds;
 
   std::unordered_map<int, Shared::Protocol::Player> m_players;
-  std::mutex m_playersMutex;
 
   Broadcaster m_broadcaster;
 
