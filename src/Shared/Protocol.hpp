@@ -5,39 +5,78 @@
 #include <vector>
 
 namespace Jetpack::Shared::Protocol {
-enum class TileType : uint8_t {
-  Empty = 0,
-  Wall = 1,
-  Coin = 2,
-  ElectricSquare = 3,
-  EndPoint = 4
-};
-
-struct Position {
-  float x;
-  float y;
-
-  bool operator==(const Position &other) const {
-    return x == other.x && y == other.y;
-  }
-};
+enum class TileType { EMPTY, COIN, ELECTRICSQUARE };
 
 struct GameMap {
   int width = 0;
   int height = 0;
   std::vector<std::vector<TileType>> tiles;
-  std::vector<Position> coinPositions;
 };
 
-enum class MessageType : uint8_t {
-  Connect = 1,
-  Disconnect = 2,
-  GameStart = 3,
-  MapData = 4,
-  PlayerUpdate = 5,
-  GameEvent = 6,
-  GameEnd = 7
+struct Position {
+  int x = 0;
+  int y = 0;
 };
 
-enum class GameEventType { PlayerDeath = 1, CoinCollected = 2 };
+enum class PlayerState {
+  CONNECTED,
+  READY,
+  PLAYING,
+  DEAD,
+  FINISHED,
+  DISCONNECTED,
+};
+
+class Player {
+private:
+  int m_clientSocket = -1;
+  int m_id = -1;
+
+  Position m_position = {0, 0};
+  float m_velocityY = 0.0f;
+  bool m_isJetpacking = false;
+
+  int m_Score = 0;
+
+  PlayerState m_state = PlayerState::CONNECTED;
+
+public:
+  Player(int clientSocket, int playerId)
+      : m_clientSocket(clientSocket), m_id(playerId) {}
+
+  int getClientSocket() const { return m_clientSocket; }
+  int getId() const { return m_id; }
+  Position getPosition() const { return m_position; }
+  float getVelocityY() const { return m_velocityY; }
+  bool isJetpacking() const { return m_isJetpacking; }
+  int getScore() const { return m_Score; }
+  PlayerState getState() const { return m_state; }
+
+  void setPosition(int x, int y) { m_position = {x, y}; }
+  void setVelocityY(float velocity) { m_velocityY = velocity; }
+  void setJetpacking(bool jetpacking) { m_isJetpacking = jetpacking; }
+  void setScore(int score) { m_Score = score; }
+  void setState(PlayerState state) { m_state = state; }
+};
+
+enum class PacketType : uint8_t {
+  CONNECT_REQUEST = 0x01,
+  CONNECT_RESPONSE = 0x02,
+  MAP_DATA = 0x03,
+  GAME_START = 0x04,
+  PLAYER_INPUT = 0x05,
+  GAME_STATE_UPDATE = 0x06,
+  PLAYER_POSITION = 0x07,
+  COIN_COLLECTED = 0x08,
+  PLAYER_DEATH = 0x09,
+  GAME_OVER = 0x0A,
+  PLAYER_DISCONNECT = 0x0B,
+};
+
+enum class GameState {
+  WAITING_FOR_PLAYERS,
+  IN_PROGRESS,
+  GAME_OVER,
+};
+
 } // namespace Jetpack::Shared::Protocol
