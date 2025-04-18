@@ -104,7 +104,7 @@ void Jetpack::Client::GameDisplay::drawMap() {
     for (int i = 0; i < m_map.height; i++) {
         for (int j = 0; j < m_map.width; j++) {
             sf::RectangleShape cell(sf::Vector2f(cellWidth,  cellHeight));
-            cell.setPosition(i * cellWidth, j * cellHeight);
+            cell.setPosition(j * cellWidth, i * cellHeight);
 
             switch (m_map.tiles[i][j]) {
                 case Shared::Protocol::TileType::COIN:
@@ -159,6 +159,17 @@ void Jetpack::Client::GameDisplay::drawPlayers() {
 }
 
 void Jetpack::Client::GameDisplay::drawUI() {
+    if (m_players.empty()) {
+        sf::Text waitingText;
+        waitingText.setFont(m_font);
+        waitingText.setCharacterSize(30);
+        waitingText.setString("Waiting for other players...");
+        waitingText.setFillColor(sf::Color::White);
+        waitingText.setPosition(m_window.getSize().x / 2.0f, m_window.getSize().y / 2.0f - 50);
+        m_window.draw(waitingText);
+        return;
+    }
+
     int yOffset = 10;
     for (const auto &player : m_players) {
         sf::Text scoreText;
