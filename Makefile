@@ -6,7 +6,9 @@
 ##
 
 SRC_SERVER = src/Server/main.cpp \
-			src/Server/Server.cpp
+			src/Server/Server.cpp \
+			src/Server/Broadcaster.cpp \
+			src/Server/Physics.cpp
 
 SRC_CLIENT = src/Client/main.cpp \
 			src/Client/NetworkClient.cpp
