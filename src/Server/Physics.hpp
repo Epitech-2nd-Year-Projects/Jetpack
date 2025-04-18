@@ -1,0 +1,18 @@
+#pragma once
+
+#include "../Shared/Protocol.hpp"
+
+namespace Jetpack::Server {
+class Physics {
+public:
+  static void applyPhysics(Shared::Protocol::Player &player);
+  static void checkBounds(Shared::Protocol::Player &player,
+                          const Shared::Protocol::GameMap &map);
+
+private:
+  static constexpr float GRAVITY = 0.1f;
+  static constexpr float JETPACK_FORCE = 0.2f;
+  static constexpr float MAX_VELOCITY = 2.0f;
+  static constexpr float HORIZONTAL_SPEED = 0.2f;
+};
+} // namespace Jetpack::Server
