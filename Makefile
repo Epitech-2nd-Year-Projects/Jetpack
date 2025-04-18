@@ -21,6 +21,7 @@ CXXFLAGS = -Wall -Wextra -Werror -std=c++20
 INCFLAGS_SERVER = -I./src/Server -I./src/Shared
 INCFLAGS_CLIENT = -I./src/Client -I./src/Shared
 
+LDFLAGS_CLIENT = -lsfml-graphics -lsfml-window -lsfml-system -lsfml-network
 LDFLAGS =
 
 CXX ?= g++
@@ -37,7 +38,7 @@ server: $(OBJ_SRC_SERVER)
 	$(CXX) $(OBJ_SRC_SERVER) $(LDFLAGS) -o $(NAME_SERVER)
 
 client: $(OBJ_SRC_CLIENT)
-	$(CXX) $(OBJ_SRC_CLIENT) $(LDFLAGS) -o $(NAME_CLIENT)
+	$(CXX) $(OBJ_SRC_CLIENT) $(LDFLAGS) $(LDFLAGS_CLIENT) -o $(NAME_CLIENT)
 
 $(OBJ_SRC_SERVER): %.o: %.cpp
 	$(CXX) $(CXXFLAGS) $(INCFLAGS_SERVER) -c $< -o $@
