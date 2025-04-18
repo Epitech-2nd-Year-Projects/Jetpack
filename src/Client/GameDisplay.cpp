@@ -1,5 +1,6 @@
 #include "GameDisplay.hpp"
 
+#include <iostream>
 #include <bits/ranges_base.h>
 
 Jetpack::Client::GameDisplay::GameDisplay(int windowWidth, int windowHeight)
@@ -15,12 +16,29 @@ Jetpack::Client::GameDisplay::~GameDisplay() {
 }
 
 void Jetpack::Client::GameDisplay::loadResources() {
-    m_backgroundTexture.create(100, 100);
-    sf::Image backgroundImage;
-    backgroundImage.create(100, 100, sf::Color(20, 20, 50));
-    m_backgroundTexture.update(backgroundImage);
+    if (!m_font.loadFromFile("./resources/DejaVuSans.ttf")) {
+        std::cerr << "Failed to load font!" << std::endl;
+    }
 
-    backgroundImage.loadFromFile()
+    m_backgroundTexture.create(100, 100);
+    sf::Image bgImage;
+    bgImage.create(100, 100, sf::Color(20, 20, 50));
+    m_backgroundTexture.update(bgImage);
+
+    m_playerTexture.create(30, 30);
+    sf::Image playerImage;
+    playerImage.create(30, 30, sf::Color::White);
+    m_playerTexture.update(playerImage);
+
+    m_coinTexture.create(20, 20);
+    sf::Image coinImage;
+    coinImage.create(20, 20, sf::Color::Yellow);
+    m_coinTexture.update(coinImage);
+
+    m_electricTexture.create(30, 30);
+    sf::Image electricImage;
+    electricImage.create(30, 30, sf::Color::Cyan);
+    m_electricTexture.update(electricImage);
 }
 
 void Jetpack::Client::GameDisplay::run() {
@@ -86,7 +104,7 @@ void Jetpack::Client::GameDisplay::drawMap() {
     for (int i = 0; i < m_map.height; i++) {
         for (int j = 0; j < m_map.width; j++) {
             sf::RectangleShape cell(sf::Vector2f(cellWidth,  cellHeight));
-            cell.setPosition(x * cellWidth, y * cellHeight);
+            cell.setPosition(i * cellWidth, j * cellHeight);
 
             switch (m_map.tiles[i][j]) {
                 case Shared::Protocol::TileType::COIN:

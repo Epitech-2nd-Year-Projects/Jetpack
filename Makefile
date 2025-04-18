@@ -11,7 +11,8 @@ SRC_SERVER = src/Server/main.cpp \
 			src/Server/Physics.cpp
 
 SRC_CLIENT = src/Client/main.cpp \
-			src/Client/NetworkClient.cpp
+			src/Client/NetworkClient.cpp \
+			src/Client/GameDisplay.cpp
 
 OBJ_SRC_SERVER = $(SRC_SERVER:.cpp=.o)
 OBJ_SRC_CLIENT = $(SRC_CLIENT:.cpp=.o)

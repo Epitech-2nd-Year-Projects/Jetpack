@@ -107,7 +107,7 @@ void Jetpack::Client::NetworkClient::networkLoop() {
     }
 }
 
-void Jetpack::Client::NetworkClient::processPacket(const uint8_t *data, ssize_t length) {
+void Jetpack::Client::NetworkClient::processPacket(const uint8_t *data, size_t length) {
     if (length < 1) {
         return;
     }
@@ -142,7 +142,7 @@ void Jetpack::Client::NetworkClient::processPacket(const uint8_t *data, ssize_t 
     }
 }
 
-void Jetpack::Client::NetworkClient::handleConnectResponse(const uint8_t *data, ssize_t length) {
+void Jetpack::Client::NetworkClient::handleConnectResponse(const uint8_t *data, size_t length) {
     if (length < 3) {
         return;
     }
@@ -157,7 +157,7 @@ void Jetpack::Client::NetworkClient::handleConnectResponse(const uint8_t *data, 
 }
 
 
-void Jetpack::Client::NetworkClient::handleMapData(const uint8_t *data, const ssize_t length) {
+void Jetpack::Client::NetworkClient::handleMapData(const uint8_t *data, const size_t length) {
     if (length < 5) {
         return;
     }
@@ -165,7 +165,7 @@ void Jetpack::Client::NetworkClient::handleMapData(const uint8_t *data, const ss
     const int width = data[1] | (data[2] << 8);
     const int height = data[3] | (data[4] << 8);
 
-    if (length < 5 + width * height) {
+    if (length < static_cast<size_t>(5) + width * height) {
         return;
     }
 
@@ -188,7 +188,7 @@ void Jetpack::Client::NetworkClient::handleMapData(const uint8_t *data, const ss
     }
 }
 
-void Jetpack::Client::NetworkClient::handleGameStart(const uint8_t *data, const ssize_t length) {
+void Jetpack::Client::NetworkClient::handleGameStart(const uint8_t *data, const size_t length) {
     if (length < 3) {
         return;
     }
@@ -210,7 +210,7 @@ void Jetpack::Client::NetworkClient::handleGameStart(const uint8_t *data, const 
     }
 }
 
-void Jetpack::Client::NetworkClient::handleGameStateUpdate(const uint8_t* data, const ssize_t length) {
+void Jetpack::Client::NetworkClient::handleGameStateUpdate(const uint8_t* data, const size_t length) {
     if (length < 2) {
         return;
     }
@@ -259,7 +259,7 @@ void Jetpack::Client::NetworkClient::handleGameStateUpdate(const uint8_t* data, 
     }
 }
 
-void Jetpack::Client::NetworkClient::handleCoinCollected(const uint8_t* data, const ssize_t length) const {
+void Jetpack::Client::NetworkClient::handleCoinCollected(const uint8_t* data, const size_t length) const {
     if (length < 5) {
         return;
     }
@@ -278,7 +278,7 @@ void Jetpack::Client::NetworkClient::handleCoinCollected(const uint8_t* data, co
     }
 }
 
-void Jetpack::Client::NetworkClient::handlePlayerDeath(const uint8_t* data, const ssize_t length) const {
+void Jetpack::Client::NetworkClient::handlePlayerDeath(const uint8_t* data, const size_t length) const {
     if (length < 2) {
         return;
     }
@@ -294,7 +294,7 @@ void Jetpack::Client::NetworkClient::handlePlayerDeath(const uint8_t* data, cons
     }
 }
 
-void Jetpack::Client::NetworkClient::handleGameOver(const uint8_t* data, const ssize_t length) const {
+void Jetpack::Client::NetworkClient::handleGameOver(const uint8_t* data, const size_t length) const {
     if (length < 3) {
         return;
     }

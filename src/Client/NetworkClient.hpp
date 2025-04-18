@@ -21,14 +21,14 @@ public:
 private:
   void networkLoop();
 
-  void processPacket(const uint8_t *data, ssize_t length);
-  void handleConnectResponse(const uint8_t *data, ssize_t length);
-  void handleMapData(const uint8_t *data, ssize_t length);
-  void handleGameStart(const uint8_t *data, ssize_t length);
-  void handleGameStateUpdate(const uint8_t *data, ssize_t length);
-  void handleCoinCollected(const uint8_t *data, ssize_t length) const;
-  void handlePlayerDeath(const uint8_t *data, ssize_t length) const;
-  void handleGameOver(const uint8_t *data, ssize_t length) const;
+  void processPacket(const uint8_t *data, size_t length);
+  void handleConnectResponse(const uint8_t *data, size_t length);
+  void handleMapData(const uint8_t *data, size_t length);
+  void handleGameStart(const uint8_t *data, size_t length);
+  void handleGameStateUpdate(const uint8_t *data, size_t length);
+  void handleCoinCollected(const uint8_t *data, size_t length) const;
+  void handlePlayerDeath(const uint8_t *data, size_t length) const;
+  void handleGameOver(const uint8_t *data, size_t length) const;
 
   void sendPlayerInput() const;
 

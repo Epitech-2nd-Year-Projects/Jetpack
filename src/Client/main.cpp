@@ -2,7 +2,7 @@
 #include <iostream>
 
 static void usage(char *program_name) {
-  std::cerr << "Usage: " << program_name << "-h <ip> -p <port> [-d]"
+  std::cerr << "Usage: " << program_name << " -h <ip> -p <port> [-d]"
             << std::endl;
 }
 
@@ -26,6 +26,20 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  Jetpack::Client::NetworkClient client(serverPort, serverIp, debugMode);
-  client.connectToServer();
+  try {
+    Jetpack::Client::NetworkClient client(serverPort, serverIp, debugMode);
+
+    if (client.connectToServer()) {
+      std::cout << "Connected to server at " << serverIp << ":" << serverPort << std::endl;
+      client.start();
+    } else {
+      std::cerr << "Failed to connect to server" << std::endl;
+      return 1;
+    }
+  } catch (const std::exception& e) {
+    std::cerr << "Error: " << e.what() << std::endl;
+    return 1;
+  }
+
+  return 0;
 }
