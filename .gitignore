@@ -33,3 +33,6 @@
 
 # Clangd configuration
 .clangd
+
+# Test files
+*.map
