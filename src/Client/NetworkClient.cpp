@@ -93,6 +93,7 @@ void Jetpack::Client::NetworkClient::start() {
 void Jetpack::Client::NetworkClient::networkLoop() {
   constexpr int BUFFER_SIZE = 1024;
   uint8_t recvBuffer[BUFFER_SIZE];
+  std::vector<uint8_t> accumulatedBuffer;
 
   const auto inputUpdateInterval = std::chrono::milliseconds(16);
   auto lastInputUpdate = std::chrono::steady_clock::now();
@@ -114,15 +115,21 @@ void Jetpack::Client::NetworkClient::networkLoop() {
         std::cout << std::dec << std::endl;
       }
 
+      accumulatedBuffer.insert(accumulatedBuffer.end(), recvBuffer, recvBuffer + bytesRead);
       size_t processedBytes = 0;
-      while (processedBytes < static_cast<size_t>(bytesRead)) {
-        size_t packetSize = getPacketSize(recvBuffer + processedBytes,
-                                          bytesRead - processedBytes);
+      while (processedBytes < accumulatedBuffer.size()) {
+        size_t packetSize = getPacketSize(accumulatedBuffer.data() + processedBytes,
+                                          accumulatedBuffer.size() - processedBytes);
         if (packetSize == 0) {
           break;
         }
-        processPacket(recvBuffer + processedBytes, packetSize);
+        processPacket(accumulatedBuffer.data() + processedBytes, packetSize);
         processedBytes += packetSize;
+      }
+
+      if (processedBytes > 0) {
+        accumulatedBuffer.erase(accumulatedBuffer.begin(),
+                              accumulatedBuffer.begin() + processedBytes);
       }
     } else if (bytesRead < 0) {
       if (errno != EAGAIN && errno != EWOULDBLOCK) {
