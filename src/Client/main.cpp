@@ -30,13 +30,14 @@ int main(int argc, char *argv[]) {
     Jetpack::Client::NetworkClient client(serverPort, serverIp, debugMode);
 
     if (client.connectToServer()) {
-      std::cout << "Connected to server at " << serverIp << ":" << serverPort << std::endl;
+      std::cout << "Connected to server at " << serverIp << ":" << serverPort
+                << std::endl;
       client.start();
     } else {
       std::cerr << "Failed to connect to server" << std::endl;
       return 1;
     }
-  } catch (const std::exception& e) {
+  } catch (const std::exception &e) {
     std::cerr << "Error: " << e.what() << std::endl;
     return 1;
   }

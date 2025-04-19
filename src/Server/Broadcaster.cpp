@@ -128,7 +128,7 @@ void Jetpack::Server::Broadcaster::broadcastGameStart() {
   uint8_t buffer[3];
   buffer[0] = static_cast<uint8_t>(Shared::Protocol::PacketType::GAME_START);
   buffer[1] = m_serverPlayersReference.size();
-  buffer[2] = 0; // maybe add timer 3,2,1, GO ?
+  buffer[2] = 0;
 
   for (const auto &playerPair : m_serverPlayersReference) {
     send(playerPair.first, buffer, sizeof(buffer), 0);

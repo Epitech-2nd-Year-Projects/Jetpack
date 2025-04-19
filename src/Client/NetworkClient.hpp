@@ -1,18 +1,19 @@
 #pragma once
 
 #include "../Shared/Protocol.hpp"
-#include <string>
-#include <unistd.h>
 #include <atomic>
 #include <memory>
+#include <string>
 #include <thread>
+#include <unistd.h>
 
 #include "GameDisplay.hpp"
 
 namespace Jetpack::Client {
 class NetworkClient {
 public:
-  explicit NetworkClient(int serverPort = 8080, std::string serverAddress = "", bool debugMode = false);
+  explicit NetworkClient(int serverPort = 8080, std::string serverAddress = "",
+                         bool debugMode = false);
   ~NetworkClient();
 
   bool connectToServer();
@@ -22,6 +23,8 @@ public:
 
 private:
   void networkLoop();
+
+  size_t getPacketSize(const uint8_t *data, size_t maxSize) const;
 
   void processPacket(const uint8_t *data, size_t length);
   void handleConnectResponse(const uint8_t *data, size_t length);

@@ -332,15 +332,49 @@ void Jetpack::Server::GameServer::checkGameStart() {
   if (readyPlayersCount >= MIN_PLAYERS) {
     m_gameState = Shared::Protocol::GameState::IN_PROGRESS;
 
-    for (auto &playerPair : m_players)
+    for (auto &playerPair : m_players) {
       playerPair.second.setState(Shared::Protocol::PlayerState::READY);
 
+      constexpr float startX = 1.0f;
+      const float startY = m_map.height / 2.0f;
+
+      playerPair.second.setPosition(startX, startY);
+      playerPair.second.setVelocityY(0.0f);
+      playerPair.second.setScore(0);
+    }
+
     m_broadcaster.broadcastGameStart();
+    m_broadcaster.broadcastGameState();
   }
 }
 
 void Jetpack::Server::GameServer::updateGameState() {
   if (m_gameState != Shared::Protocol::GameState::IN_PROGRESS) {
+    return;
+  }
+
+  bool allReady = true;
+  bool anyPlaying = false;
+
+  for (auto &playerPair : m_players) {
+    if (playerPair.second.getState() ==
+        Shared::Protocol::PlayerState::PLAYING) {
+      anyPlaying = true;
+    } else if (playerPair.second.getState() ==
+               Shared::Protocol::PlayerState::READY) {
+    } else {
+      allReady = false;
+    }
+  }
+
+  if (allReady && !anyPlaying) {
+    for (auto &playerPair : m_players) {
+      if (playerPair.second.getState() ==
+          Shared::Protocol::PlayerState::READY) {
+        playerPair.second.setState(Shared::Protocol::PlayerState::PLAYING);
+      }
+    }
+    m_broadcaster.broadcastGameState();
     return;
   }
 
@@ -415,7 +449,8 @@ void Jetpack::Server::GameServer::checkGameEnd() {
     }
   }
 
-  if (allFinished || anyDead || activePlayersCount < MIN_PLAYERS) {
+  if ((allFinished && activePlayersCount > 0) || anyDead ||
+      (activePlayersCount < MIN_PLAYERS && m_players.size() >= MIN_PLAYERS)) {
     m_gameState = Shared::Protocol::GameState::GAME_OVER;
 
     int winnerId = -1;
