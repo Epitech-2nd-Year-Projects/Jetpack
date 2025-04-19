@@ -6,6 +6,11 @@ Jetpack::Client::GameDisplay::GameDisplay(int windowWidth, int windowHeight)
     : m_window(sf::VideoMode(windowWidth, windowHeight), "Jetpack") {
   loadResources();
   m_window.setFramerateLimit(60);
+
+  m_topBoundary = 68.0f;
+  m_bottomBoundary = 70.0f;
+  m_backgroundHeight = 341.0f;
+  m_playableHeight = m_backgroundHeight - m_topBoundary - m_bottomBoundary;
 }
 
 Jetpack::Client::GameDisplay::~GameDisplay() {
@@ -189,6 +194,18 @@ void Jetpack::Client::GameDisplay::drawBackground() {
 
   background.setScale(scaleX, scaleY);
   m_window.draw(background);
+
+  if (m_debugMode) {
+    sf::RectangleShape topLine(sf::Vector2f(m_window.getSize().x, 2.0f));
+    topLine.setPosition(0, m_topBoundary * (static_cast<float>(m_window.getSize().y) / m_backgroundHeight));
+    topLine.setFillColor(sf::Color::Red);
+    m_window.draw(topLine);
+
+    sf::RectangleShape bottomLine(sf::Vector2f(m_window.getSize().x, 2.0f));
+    bottomLine.setPosition(0, m_window.getSize().y - (m_bottomBoundary * (static_cast<float>(m_window.getSize().y) / m_backgroundHeight)));
+    bottomLine.setFillColor(sf::Color::Red);
+    m_window.draw(bottomLine);
+  }
 }
 
 void Jetpack::Client::GameDisplay::drawPlayers() {
@@ -197,7 +214,12 @@ void Jetpack::Client::GameDisplay::drawPlayers() {
   }
 
   float cellWidth = static_cast<float>(m_window.getSize().x) / m_map.width;
-  float cellHeight = static_cast<float>(m_window.getSize().y) / m_map.height;
+  float windowHeight = static_cast<float>(m_window.getSize().y);
+  float topOffset = m_topBoundary * (windowHeight / m_backgroundHeight);
+  float bottomOffset = m_bottomBoundary * (windowHeight / m_backgroundHeight);
+  float playableHeight = windowHeight - topOffset - bottomOffset;
+
+  float cellHeight = playableHeight / m_map.height;
 
   for (const auto &player : m_players) {
     sf::Sprite playerSprite(m_playerSpritesheet);
@@ -214,8 +236,13 @@ void Jetpack::Client::GameDisplay::drawPlayers() {
     float spriteWidth = playerSprite.getTextureRect().width * scale;
     float spriteHeight = playerSprite.getTextureRect().height * scale;
     float xPos = player.getPosition().x * cellWidth + (cellWidth - spriteWidth) / 2;
+
     float yOffset = 10.0f;
-    float yPos = player.getPosition().y * cellHeight + cellHeight - spriteHeight - yOffset;
+    float relativePos = player.getPosition().y / m_map.height;
+    float yPos = topOffset + (relativePos * playableHeight) + (cellHeight - spriteHeight) / 2 - yOffset;
+
+    yPos = std::max(yPos, topOffset);
+    yPos = std::min(yPos, windowHeight - bottomOffset - spriteHeight);
 
     playerSprite.setPosition(xPos, yPos);
 
@@ -229,7 +256,7 @@ void Jetpack::Client::GameDisplay::drawPlayers() {
       sf::RectangleShape hitbox;
       hitbox.setSize(sf::Vector2f(cellWidth * 0.8f, cellHeight * 0.8f));
       hitbox.setPosition(player.getPosition().x * cellWidth + cellWidth * 0.1f,
-                        player.getPosition().y * cellHeight + cellHeight * 0.1f);
+                         topOffset + (player.getPosition().y / m_map.height) * playableHeight + cellHeight * 0.1f);
       hitbox.setFillColor(sf::Color(0, 0, 0, 0));
       hitbox.setOutlineColor(sf::Color::Red);
       hitbox.setOutlineThickness(1.0f);
@@ -245,14 +272,22 @@ void Jetpack::Client::GameDisplay::drawMap() {
   }
 
   float cellWidth = static_cast<float>(m_window.getSize().x) / m_map.width;
-  float cellHeight = static_cast<float>(m_window.getSize().y) / m_map.height;
+  float windowHeight = static_cast<float>(m_window.getSize().y);
+  float topOffset = m_topBoundary * (windowHeight / m_backgroundHeight);
+  float bottomOffset = m_bottomBoundary * (windowHeight / m_backgroundHeight);
+  float playableHeight = windowHeight - topOffset - bottomOffset;
+
+  float cellHeight = playableHeight / m_map.height;
 
   for (int i = 0; i < m_map.height; i++) {
     for (int j = 0; j < m_map.width; j++) {
+      float xPos = j * cellWidth;
+      float yPos = topOffset + i * cellHeight;
+
       if (m_debugMode && m_map.tiles[i][j] != Shared::Protocol::TileType::EMPTY) {
         sf::RectangleShape cellHitbox;
         cellHitbox.setSize(sf::Vector2f(cellWidth * 0.8f, cellHeight * 0.8f));
-        cellHitbox.setPosition(j * cellWidth + cellWidth * 0.1f, i * cellHeight + cellHeight * 0.1f);
+        cellHitbox.setPosition(xPos + cellWidth * 0.1f, yPos + cellHeight * 0.1f);
         cellHitbox.setFillColor(sf::Color(0, 0, 0, 0));
         cellHitbox.setOutlineColor(sf::Color::Yellow);
         cellHitbox.setOutlineThickness(1.0f);
@@ -270,8 +305,9 @@ void Jetpack::Client::GameDisplay::drawMap() {
 
           float spriteWidth = m_coinFrames[0].width * scale;
           float spriteHeight = m_coinFrames[0].height * scale;
-          coinSprite.setPosition(j * cellWidth + (cellWidth - spriteWidth) / 2,
-                                i * cellHeight + (cellHeight - spriteHeight) / 2);
+
+          coinSprite.setPosition(xPos + (cellWidth - spriteWidth) / 2,
+                                yPos + (cellHeight - spriteHeight) / 2);
 
           m_window.draw(coinSprite);
         }
@@ -286,8 +322,9 @@ void Jetpack::Client::GameDisplay::drawMap() {
 
           float spriteWidth = m_zapperFrames[0].width * scale;
           float spriteHeight = m_zapperFrames[0].height * scale;
-          zapperSprite.setPosition(j * cellWidth + (cellWidth - spriteWidth) / 2,
-                                  i * cellHeight + (cellHeight - spriteHeight) / 2);
+
+          zapperSprite.setPosition(xPos + (cellWidth - spriteWidth) / 2,
+                                  yPos + (cellHeight - spriteHeight) / 2);
           m_window.draw(zapperSprite);
         }
         break;
@@ -448,4 +485,6 @@ void Jetpack::Client::GameDisplay::setLocalPlayerId(int id) {
   m_localPlayerId = id;
 }
 
-void Jetpack::Client::GameDisplay::setDebugMode(bool debug) { m_debugMode = debug; }
+void Jetpack::Client::GameDisplay::setDebugMode(bool debug) {
+  m_debugMode = debug;
+}

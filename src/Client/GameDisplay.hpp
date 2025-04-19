@@ -73,6 +73,12 @@ private:
 
   bool m_jetpackActive = false;
 
+  // Playable area boundaries
+  float m_topBoundary = 0.0f;
+  float m_bottomBoundary = 0.0f;
+  float m_backgroundHeight = 0.0f;
+  float m_playableHeight = 0.0f;
+
   void render();
   void drawBackground();
   void drawMap();
