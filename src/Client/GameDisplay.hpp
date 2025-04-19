@@ -73,7 +73,6 @@ private:
 
   bool m_jetpackActive = false;
 
-  // Playable area boundaries
   float m_topBoundary = 0.0f;
   float m_bottomBoundary = 0.0f;
   float m_backgroundHeight = 0.0f;
@@ -93,5 +92,13 @@ private:
   void loadResources();
   void loadSounds();
   void initializeAnimations();
+
+  std::vector<sf::Texture> m_parallaxTextures;
+  std::vector<float> m_parallaxSpeeds;
+  float m_backgroundScrollPosition = 0.0f;
+
+  void loadParallaxBackgrounds();
+  void updateParallaxBackgrounds(float deltaTime);
+  void drawParallaxBackgrounds();
 };
 } // namespace Jetpack::Client

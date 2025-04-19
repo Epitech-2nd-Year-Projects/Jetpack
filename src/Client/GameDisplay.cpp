@@ -36,8 +36,39 @@ void Jetpack::Client::GameDisplay::loadResources() {
     std::cerr << "Failed to load zapper_sprite_sheet.png!" << std::endl;
   }
 
+  loadParallaxBackgrounds();
   loadSounds();
   initializeAnimations();
+}
+
+void Jetpack::Client::GameDisplay::loadParallaxBackgrounds() {
+  if (m_backgroundTexture.getSize().x > 0) {
+
+    sf::Texture farBackground = m_backgroundTexture;
+    farBackground.setRepeated(true);
+    m_parallaxTextures.push_back(farBackground);
+    m_parallaxSpeeds.push_back(0.2f);
+
+    sf::Texture midBackground = m_backgroundTexture;
+    midBackground.setRepeated(true);
+    m_parallaxTextures.push_back(midBackground);
+    m_parallaxSpeeds.push_back(0.5f);
+
+    sf::Texture nearBackground = m_backgroundTexture;
+    nearBackground.setRepeated(true);
+    m_parallaxTextures.push_back(nearBackground);
+    m_parallaxSpeeds.push_back(0.8f);  
+  }
+}
+
+void Jetpack::Client::GameDisplay::updateParallaxBackgrounds(float deltaTime) {
+  
+  m_backgroundScrollPosition += 50.0f * deltaTime; 
+
+  
+  if (m_backgroundScrollPosition > 10000.0f) {
+    m_backgroundScrollPosition = 0.0f;
+  }
 }
 
 void Jetpack::Client::GameDisplay::loadSounds() {
@@ -107,9 +138,14 @@ void Jetpack::Client::GameDisplay::initializeAnimations() {
 
 void Jetpack::Client::GameDisplay::run() {
   m_animationClock.restart();
+  sf::Clock deltaClock;
+
   while (m_window.isOpen()) {
+    float deltaTime = deltaClock.restart().asSeconds();
+
     processEvents();
     updateAnimations();
+    updateParallaxBackgrounds(deltaTime);
     render();
   }
 }
@@ -178,12 +214,62 @@ void Jetpack::Client::GameDisplay::render() {
   if (m_gameOver) {
     drawGameOver();
   } else {
-    drawBackground();
+    drawParallaxBackgrounds();
     drawMap();
     drawPlayers();
     drawUI();
   }
   m_window.display();
+}
+
+void Jetpack::Client::GameDisplay::drawParallaxBackgrounds() {
+  if (m_parallaxTextures.empty()) {
+    sf::Sprite background(m_backgroundTexture);
+    float scaleX = static_cast<float>(m_window.getSize().x) / m_backgroundTexture.getSize().x;
+    float scaleY = static_cast<float>(m_window.getSize().y) / m_backgroundTexture.getSize().y;
+    background.setScale(scaleX, scaleY);
+    m_window.draw(background);
+    return;
+  }
+
+  sf::RectangleShape darkBackground(sf::Vector2f(m_window.getSize().x, m_window.getSize().y));
+  darkBackground.setFillColor(sf::Color(20, 20, 50));
+  m_window.draw(darkBackground);
+
+  for (size_t i = 0; i < m_parallaxTextures.size(); i++) {
+    sf::Sprite parallaxLayer(m_parallaxTextures[i]);
+
+    float layerPos = -m_backgroundScrollPosition * m_parallaxSpeeds[i];
+
+    parallaxLayer.setTextureRect(sf::IntRect(
+      static_cast<int>(layerPos) % m_parallaxTextures[i].getSize().x,
+      0,
+      m_window.getSize().x + m_parallaxTextures[i].getSize().x,
+      m_parallaxTextures[i].getSize().y
+    ));
+
+    
+    float scaleX = static_cast<float>(m_window.getSize().x) / m_backgroundTexture.getSize().x;
+    float scaleY = static_cast<float>(m_window.getSize().y) / m_backgroundTexture.getSize().y;
+    parallaxLayer.setScale(scaleX, scaleY);
+
+    if (i == 0) {
+      parallaxLayer.setColor(sf::Color(100, 100, 180, 150));
+    } else if (i == 1) {
+      parallaxLayer.setColor(sf::Color(180, 180, 220, 200));
+    } else if (i == 2) {
+      parallaxLayer.setColor(sf::Color(255, 255, 255, 255));
+    }
+
+    m_window.draw(parallaxLayer);
+  }
+
+  sf::RectangleShape gradientOverlay(sf::Vector2f(m_window.getSize().x, m_window.getSize().y));
+  sf::Color topColor(0, 0, 50, 50);
+  sf::Color bottomColor(0, 0, 30, 80);
+
+  gradientOverlay.setFillColor(bottomColor);
+  m_window.draw(gradientOverlay);
 }
 
 void Jetpack::Client::GameDisplay::drawBackground() {
