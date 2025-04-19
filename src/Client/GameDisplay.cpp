@@ -8,8 +8,8 @@ Jetpack::Client::GameDisplay::GameDisplay(int windowWidth, int windowHeight)
   loadResources();
   m_window.setFramerateLimit(60);
 
-  m_topBoundary = 68.0f;
-  m_bottomBoundary = 70.0f;
+  m_topBoundary = 48.0f;
+  m_bottomBoundary = 50.0f;
   m_backgroundHeight = 341.0f;
   m_playableHeight = m_backgroundHeight - m_topBoundary - m_bottomBoundary;
 }
@@ -355,15 +355,9 @@ void Jetpack::Client::GameDisplay::drawPlayers() {
     return;
   }
 
-  
   const float cameraZoom = 2.0f;
-
-  
   float visibleMapWidth = m_map.width / cameraZoom;
-
-  
   float cellWidth = static_cast<float>(m_window.getSize().x) / visibleMapWidth;
-
   float windowHeight = static_cast<float>(m_window.getSize().y);
   float topOffset = m_topBoundary * (windowHeight / m_backgroundHeight);
   float bottomOffset = m_bottomBoundary * (windowHeight / m_backgroundHeight);
@@ -372,16 +366,13 @@ void Jetpack::Client::GameDisplay::drawPlayers() {
   float cellHeight = playableHeight / m_map.height;
 
   for (const auto &player : m_players) {
-    
     float screenX = (player.getPosition().x - m_cameraPositionX) * cellWidth;
-
     
     if (screenX < -cellWidth || screenX > m_window.getSize().x + cellWidth) {
       continue;
     }
 
     sf::Sprite playerSprite(m_playerSpritesheet);
-
     if (player.isJetpacking()) {
       playerSprite.setTextureRect(m_playerJetpackFrames[m_jetpackAnimFrame]);
     } else {
@@ -398,7 +389,7 @@ void Jetpack::Client::GameDisplay::drawPlayers() {
     float yOffset = 10.0f;
     float relativePos = player.getPosition().y / m_map.height;
     float yPos = topOffset + (relativePos * playableHeight) + (cellHeight - spriteHeight) / 2 - yOffset;
-
+    
     yPos = std::max(yPos, topOffset);
     yPos = std::min(yPos, windowHeight - bottomOffset - spriteHeight);
 
@@ -428,7 +419,6 @@ void Jetpack::Client::GameDisplay::drawMap() {
   if (m_map.width == 0 || m_map.height == 0) {
     return;
   }
-
   const float cameraZoom = 2.0f;
   float visibleMapWidth = m_map.width / cameraZoom;
   float cellWidth = static_cast<float>(m_window.getSize().x) / visibleMapWidth;
@@ -438,13 +428,25 @@ void Jetpack::Client::GameDisplay::drawMap() {
   float playableHeight = windowHeight - topOffset - bottomOffset;
 
   float cellHeight = playableHeight / m_map.height;
-  
+  if (m_debugMode) {
+    sf::RectangleShape topBoundary;
+    topBoundary.setSize(sf::Vector2f(m_window.getSize().x, 2.0f));
+    topBoundary.setPosition(0, topOffset);
+    topBoundary.setFillColor(sf::Color::Red);
+    m_window.draw(topBoundary);
+
+    sf::RectangleShape bottomBoundary;
+    bottomBoundary.setSize(sf::Vector2f(m_window.getSize().x, 2.0f));
+    bottomBoundary.setPosition(0, windowHeight - bottomOffset);
+    bottomBoundary.setFillColor(sf::Color::Red);
+    m_window.draw(bottomBoundary);
+  }
+
   int startCol = static_cast<int>(m_cameraPositionX);
   startCol = std::max(0, startCol);
-  
   int endCol = static_cast<int>(m_cameraPositionX + visibleMapWidth + 1);
   endCol = std::min(endCol, m_map.width);
-
+  
   for (int i = 0; i < m_map.height; i++) {
     for (int j = startCol; j < endCol; j++) {
       
