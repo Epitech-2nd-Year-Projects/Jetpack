@@ -1,6 +1,5 @@
 #include "GameDisplay.hpp"
 
-#include <bits/ranges_base.h>
 #include <iostream>
 
 Jetpack::Client::GameDisplay::GameDisplay(int windowWidth, int windowHeight)
@@ -16,35 +15,130 @@ Jetpack::Client::GameDisplay::~GameDisplay() {
 }
 
 void Jetpack::Client::GameDisplay::loadResources() {
-  if (!m_font.loadFromFile("./resources/DejaVuSans.ttf")) {
-    std::cerr << "Failed to load font!" << std::endl;
+  if (!m_gameFont.loadFromFile("./resources/jetpack_font.ttf")) {
+    std::cerr << "Failed to load jetpack_font.ttf!" << std::endl;
+  }
+  if (!m_backgroundTexture.loadFromFile("./resources/background.png")) {
+    std::cerr << "Failed to load background.png!" << std::endl;
+  }
+  if (!m_playerSpritesheet.loadFromFile("./resources/player_sprite_sheet.png")) {
+    std::cerr << "Failed to load player_sprite_sheet.png!" << std::endl;
+  }
+  if (!m_coinSpritesheet.loadFromFile("./resources/coins_sprite_sheet.png")) {
+    std::cerr << "Failed to load coins_sprite_sheet.png!" << std::endl;
+  }
+  if (!m_zapperSpritesheet.loadFromFile("./resources/zapper_sprite_sheet.png")) {
+    std::cerr << "Failed to load zapper_sprite_sheet.png!" << std::endl;
   }
 
-  m_backgroundTexture.create(100, 100);
-  sf::Image bgImage;
-  bgImage.create(100, 100, sf::Color(20, 20, 50));
-  m_backgroundTexture.update(bgImage);
+  loadSounds();
+  initializeAnimations();
+}
 
-  m_playerTexture.create(30, 30);
-  sf::Image playerImage;
-  playerImage.create(30, 30, sf::Color::White);
-  m_playerTexture.update(playerImage);
+void Jetpack::Client::GameDisplay::loadSounds() {
+  if (!m_coinPickupBuffer.loadFromFile("./resources/coin_pickup_1.wav")) {
+    std::cerr << "Failed to load coin_pickup_1.wav!" << std::endl;
+  }
+  if (!m_jetpackStartBuffer.loadFromFile("./resources/jetpack_start.wav")) {
+    std::cerr << "Failed to load jetpack_start.wav!" << std::endl;
+  }
+  if (!m_jetpackLoopBuffer.loadFromFile("./resources/jetpack_lp.wav")) {
+    std::cerr << "Failed to load jetpack_lp.wav!" << std::endl;
+  }
+  if (!m_jetpackStopBuffer.loadFromFile("./resources/jetpack_stop.wav")) {
+    std::cerr << "Failed to load jetpack_stop.wav!" << std::endl;
+  }
+  if (!m_zapperBuffer.loadFromFile("./resources/dud_zapper_pop.wav")) {
+    std::cerr << "Failed to load dud_zapper_pop.wav!" << std::endl;
+  }
 
-  m_coinTexture.create(20, 20);
-  sf::Image coinImage;
-  coinImage.create(20, 20, sf::Color::Yellow);
-  m_coinTexture.update(coinImage);
+  m_coinPickupSound.setBuffer(m_coinPickupBuffer);
+  m_jetpackStartSound.setBuffer(m_jetpackStartBuffer);
+  m_jetpackLoopSound.setBuffer(m_jetpackLoopBuffer);
+  m_jetpackLoopSound.setLoop(true);
+  m_jetpackStopSound.setBuffer(m_jetpackStopBuffer);
+  m_zapperSound.setBuffer(m_zapperBuffer);
 
-  m_electricTexture.create(30, 30);
-  sf::Image electricImage;
-  electricImage.create(30, 30, sf::Color::Cyan);
-  m_electricTexture.update(electricImage);
+  if (!m_gameMusic.openFromFile("./resources/theme.ogg")) {
+    std::cerr << "Failed to load theme.ogg!" << std::endl;
+  }
+  m_gameMusic.setLoop(true);
+  m_gameMusic.setVolume(50.0f);
+  m_gameMusic.play();
+}
+
+void Jetpack::Client::GameDisplay::initializeAnimations() {
+  const int playerFrameWidth = 134;
+  const int playerFrameHeight = 134;
+  const int numPlayerRunFrames = 4;
+
+  for (int i = 0; i < numPlayerRunFrames; i++) {
+    sf::IntRect frame(i * playerFrameWidth, 0, playerFrameWidth, playerFrameHeight);
+    m_playerRunFrames.push_back(frame);
+  }
+
+  const int numPlayerJetpackFrames = 4;
+  for (int i = 0; i < numPlayerJetpackFrames; i++) {
+    sf::IntRect frame(i * playerFrameWidth, playerFrameHeight, playerFrameWidth, playerFrameHeight);
+    m_playerJetpackFrames.push_back(frame);
+  }
+
+  const int coinFrameWidth = 192;
+  const int coinFrameHeight = 171;
+  const int numCoinFrames = 6;
+  for (int i = 0; i < numCoinFrames; i++) {
+    sf::IntRect frame(i * coinFrameWidth, 0, coinFrameWidth, coinFrameHeight);
+    m_coinFrames.push_back(frame);
+  }
+
+  const int zapperFrameWidth = 47;
+  const int zapperFrameHeight = 122;
+  const int numZapperFrames = 4;
+  for (int i = 0; i < numZapperFrames; i++) {
+    sf::IntRect frame(i * zapperFrameWidth, 0, zapperFrameWidth, zapperFrameHeight);
+    m_zapperFrames.push_back(frame);
+  }
 }
 
 void Jetpack::Client::GameDisplay::run() {
+  m_animationClock.restart();
   while (m_window.isOpen()) {
     processEvents();
+    updateAnimations();
     render();
+  }
+}
+
+void Jetpack::Client::GameDisplay::updateAnimations() {
+  float elapsedTime = m_animationClock.getElapsedTime().asSeconds();
+
+  m_playerAnimFrame = static_cast<int>((elapsedTime * 10.0f)) % m_playerRunFrames.size();
+  m_jetpackAnimFrame = static_cast<int>((elapsedTime * 15.0f)) % m_playerJetpackFrames.size();
+  m_coinAnimFrame = static_cast<int>((elapsedTime * 8.0f)) % m_coinFrames.size();
+  m_zapperAnimFrame = static_cast<int>((elapsedTime * 12.0f)) % m_zapperFrames.size();
+  handleJetpackSounds();
+}
+
+void Jetpack::Client::GameDisplay::handleJetpackSounds() {
+  std::lock_guard<std::mutex> lock(m_dataMutex);
+
+  bool anyPlayerJetpacking = false;
+
+  for (const auto &player : m_players) {
+    if (player.getId() == m_localPlayerId && player.isJetpacking()) {
+      anyPlayerJetpacking = true;
+      break;
+    }
+  }
+
+  if (anyPlayerJetpacking && !m_wasJetpacking) {
+    m_jetpackStartSound.play();
+    m_jetpackLoopSound.play();
+    m_wasJetpacking = true;
+  } else if (!anyPlayerJetpacking && m_wasJetpacking) {
+    m_jetpackLoopSound.stop();
+    m_jetpackStopSound.play();
+    m_wasJetpacking = false;
   }
 }
 
@@ -89,11 +183,60 @@ void Jetpack::Client::GameDisplay::render() {
 
 void Jetpack::Client::GameDisplay::drawBackground() {
   sf::Sprite background(m_backgroundTexture);
-  background.setScale(static_cast<float>(m_window.getSize().x) /
-                          m_backgroundTexture.getSize().x,
-                      static_cast<float>(m_window.getSize().y) /
-                          m_backgroundTexture.getSize().y);
+
+  float scaleX = static_cast<float>(m_window.getSize().x) / m_backgroundTexture.getSize().x;
+  float scaleY = static_cast<float>(m_window.getSize().y) / m_backgroundTexture.getSize().y;
+
+  background.setScale(scaleX, scaleY);
   m_window.draw(background);
+}
+
+void Jetpack::Client::GameDisplay::drawPlayers() {
+  if (m_map.width == 0 || m_map.height == 0) {
+    return;
+  }
+
+  float cellWidth = static_cast<float>(m_window.getSize().x) / m_map.width;
+  float cellHeight = static_cast<float>(m_window.getSize().y) / m_map.height;
+
+  for (const auto &player : m_players) {
+    sf::Sprite playerSprite(m_playerSpritesheet);
+
+    if (player.isJetpacking()) {
+      playerSprite.setTextureRect(m_playerJetpackFrames[m_jetpackAnimFrame]);
+    } else {
+      playerSprite.setTextureRect(m_playerRunFrames[m_playerAnimFrame]);
+    }
+
+    float scale = 0.4f;
+    playerSprite.setScale(scale, scale);
+
+    float spriteWidth = playerSprite.getTextureRect().width * scale;
+    float spriteHeight = playerSprite.getTextureRect().height * scale;
+    float xPos = player.getPosition().x * cellWidth + (cellWidth - spriteWidth) / 2;
+    float yOffset = 10.0f;
+    float yPos = player.getPosition().y * cellHeight + cellHeight - spriteHeight - yOffset;
+
+    playerSprite.setPosition(xPos, yPos);
+
+    if (player.getId() == m_localPlayerId) {
+      playerSprite.setColor(sf::Color(200, 255, 200));
+    } else {
+      playerSprite.setColor(sf::Color(255, 200, 200));
+    }
+
+    if (m_debugMode) {
+      sf::RectangleShape hitbox;
+      hitbox.setSize(sf::Vector2f(cellWidth * 0.8f, cellHeight * 0.8f));
+      hitbox.setPosition(player.getPosition().x * cellWidth + cellWidth * 0.1f,
+                        player.getPosition().y * cellHeight + cellHeight * 0.1f);
+      hitbox.setFillColor(sf::Color(0, 0, 0, 0));
+      hitbox.setOutlineColor(sf::Color::Red);
+      hitbox.setOutlineThickness(1.0f);
+      m_window.draw(hitbox);
+    }
+    m_window.draw(playerSprite);
+  }
 }
 
 void Jetpack::Client::GameDisplay::drawMap() {
@@ -106,19 +249,47 @@ void Jetpack::Client::GameDisplay::drawMap() {
 
   for (int i = 0; i < m_map.height; i++) {
     for (int j = 0; j < m_map.width; j++) {
-      sf::RectangleShape cell(sf::Vector2f(cellWidth, cellHeight));
-      cell.setPosition(j * cellWidth, i * cellHeight);
+      if (m_debugMode && m_map.tiles[i][j] != Shared::Protocol::TileType::EMPTY) {
+        sf::RectangleShape cellHitbox;
+        cellHitbox.setSize(sf::Vector2f(cellWidth * 0.8f, cellHeight * 0.8f));
+        cellHitbox.setPosition(j * cellWidth + cellWidth * 0.1f, i * cellHeight + cellHeight * 0.1f);
+        cellHitbox.setFillColor(sf::Color(0, 0, 0, 0));
+        cellHitbox.setOutlineColor(sf::Color::Yellow);
+        cellHitbox.setOutlineThickness(1.0f);
+        m_window.draw(cellHitbox);
+      }
 
       switch (m_map.tiles[i][j]) {
       case Shared::Protocol::TileType::COIN:
-        cell.setTexture(&m_coinTexture);
-        cell.setFillColor(sf::Color::Yellow);
-        m_window.draw(cell);
+        {
+          sf::Sprite coinSprite(m_coinSpritesheet);
+          coinSprite.setTextureRect(m_coinFrames[m_coinAnimFrame]);
+
+          float scale = 0.2f;
+          coinSprite.setScale(scale, scale);
+
+          float spriteWidth = m_coinFrames[0].width * scale;
+          float spriteHeight = m_coinFrames[0].height * scale;
+          coinSprite.setPosition(j * cellWidth + (cellWidth - spriteWidth) / 2,
+                                i * cellHeight + (cellHeight - spriteHeight) / 2);
+
+          m_window.draw(coinSprite);
+        }
         break;
       case Shared::Protocol::TileType::ELECTRICSQUARE:
-        cell.setTexture(&m_electricTexture);
-        cell.setFillColor(sf::Color::Cyan);
-        m_window.draw(cell);
+        {
+          sf::Sprite zapperSprite(m_zapperSpritesheet);
+          zapperSprite.setTextureRect(m_zapperFrames[m_zapperAnimFrame]);
+
+          float scale = 0.6f;
+          zapperSprite.setScale(scale, scale);
+
+          float spriteWidth = m_zapperFrames[0].width * scale;
+          float spriteHeight = m_zapperFrames[0].height * scale;
+          zapperSprite.setPosition(j * cellWidth + (cellWidth - spriteWidth) / 2,
+                                  i * cellHeight + (cellHeight - spriteHeight) / 2);
+          m_window.draw(zapperSprite);
+        }
         break;
       default:
         break;
@@ -127,39 +298,18 @@ void Jetpack::Client::GameDisplay::drawMap() {
   }
 }
 
-void Jetpack::Client::GameDisplay::drawPlayers() {
-  if (m_map.width == 0 || m_map.height == 0) {
-    return;
-  }
-
-  float cellWidth = static_cast<float>(m_window.getSize().x) / m_map.width;
-  float cellHeight = static_cast<float>(m_window.getSize().y) / m_map.height;
-
-  for (const auto &player : m_players) {
-    sf::RectangleShape playerShape(
-        sf::Vector2f(cellWidth * 0.8f, cellHeight * 0.8f));
-    playerShape.setPosition(
-        player.getPosition().x * cellWidth + cellWidth * 0.1f,
-        player.getPosition().y * cellHeight + cellHeight * 0.1f);
-
-    if (player.getId() == m_localPlayerId) {
-      playerShape.setFillColor(sf::Color::Green);
-    } else {
-      playerShape.setFillColor(sf::Color::Red);
-    }
-    m_window.draw(playerShape);
-  }
-}
-
 void Jetpack::Client::GameDisplay::drawUI() {
   if (m_players.empty()) {
     sf::Text waitingText;
-    waitingText.setFont(m_font);
+    waitingText.setFont(m_gameFont);
     waitingText.setCharacterSize(30);
     waitingText.setString("Waiting for other players...");
     waitingText.setFillColor(sf::Color::White);
-    waitingText.setPosition(m_window.getSize().x / 2.0f,
-                            m_window.getSize().y / 2.0f - 50);
+
+    sf::FloatRect textRect = waitingText.getLocalBounds();
+    waitingText.setOrigin(textRect.width / 2.0f, textRect.height / 2.0f);
+    waitingText.setPosition(m_window.getSize().x / 2.0f, m_window.getSize().y / 2.0f);
+
     m_window.draw(waitingText);
     return;
   }
@@ -167,8 +317,10 @@ void Jetpack::Client::GameDisplay::drawUI() {
   int yOffset = 10;
   for (const auto &player : m_players) {
     sf::Text scoreText;
-    scoreText.setFont(m_font);
+    scoreText.setFont(m_gameFont);
     scoreText.setCharacterSize(20);
+    scoreText.setOutlineThickness(2.0f);
+    scoreText.setOutlineColor(sf::Color::Black);
 
     if (player.getId() == m_localPlayerId) {
       scoreText.setString("You: " + std::to_string(player.getScore()));
@@ -186,30 +338,38 @@ void Jetpack::Client::GameDisplay::drawUI() {
 }
 
 void Jetpack::Client::GameDisplay::drawGameOver() {
+  sf::RectangleShape overlay(sf::Vector2f(m_window.getSize().x, m_window.getSize().y));
+  overlay.setFillColor(sf::Color(0, 0, 0, 200));
+  m_window.draw(overlay);
+
   sf::Text gameOverText;
-  gameOverText.setFont(m_font);
-  gameOverText.setCharacterSize(40);
+  gameOverText.setFont(m_gameFont);
+  gameOverText.setCharacterSize(60);
   gameOverText.setString("GAME OVER");
   gameOverText.setFillColor(sf::Color::White);
+  gameOverText.setOutlineThickness(3.0f);
+  gameOverText.setOutlineColor(sf::Color::Black);
 
   sf::FloatRect textRect = gameOverText.getLocalBounds();
   gameOverText.setOrigin(textRect.left + textRect.width / 2.0f,
-                         textRect.top + textRect.height / 2.0f);
+                       textRect.top + textRect.height / 2.0f);
   gameOverText.setPosition(m_window.getSize().x / 2.0f,
-                           m_window.getSize().y / 2.0f - 50);
+                         m_window.getSize().y / 2.0f - 50);
 
   m_window.draw(gameOverText);
 
   sf::Text resultText;
-  resultText.setFont(m_font);
-  resultText.setCharacterSize(30);
+  resultText.setFont(m_gameFont);
+  resultText.setCharacterSize(40);
+  resultText.setOutlineThickness(2.0f);
+  resultText.setOutlineColor(sf::Color::Black);
 
   if (m_winnerId == m_localPlayerId) {
-    resultText.setString("You win !");
+    resultText.setString("You win!");
     resultText.setFillColor(sf::Color::Green);
   } else if (m_winnerId > 0) {
-    resultText.setString("Player " + std::to_string(m_winnerId) + " Wins !");
-    resultText.setFillColor(sf::Color::Green);
+    resultText.setString("Player " + std::to_string(m_winnerId) + " Wins!");
+    resultText.setFillColor(sf::Color::Red);
   } else {
     resultText.setString("No winner");
     resultText.setFillColor(sf::Color::Yellow);
@@ -217,9 +377,9 @@ void Jetpack::Client::GameDisplay::drawGameOver() {
 
   textRect = resultText.getLocalBounds();
   resultText.setOrigin(textRect.left + textRect.width / 2.0f,
-                       textRect.top + textRect.height / 2.0f);
+                     textRect.top + textRect.height / 2.0f);
   resultText.setPosition(m_window.getSize().x / 2.0f,
-                         m_window.getSize().y / 2.0f + 50);
+                       m_window.getSize().y / 2.0f + 50);
   m_window.draw(resultText);
 }
 
@@ -248,6 +408,10 @@ void Jetpack::Client::GameDisplay::handleCoinCollected(int playerId, int x,
   for (auto &player : m_players) {
     if (player.getId() == playerId) {
       player.setScore(player.getScore() + 1);
+
+      if (playerId == m_localPlayerId) {
+        m_coinPickupSound.play();
+      }
       break;
     }
   }
@@ -259,6 +423,10 @@ void Jetpack::Client::GameDisplay::handlePlayerDeath(int playerId) {
   for (auto &player : m_players) {
     if (player.getId() == playerId) {
       player.setState(Shared::Protocol::PlayerState::DEAD);
+
+      if (playerId == m_localPlayerId) {
+        m_zapperSound.play();
+      }
       break;
     }
   }
@@ -269,6 +437,7 @@ void Jetpack::Client::GameDisplay::handleGameOver(int winnerId) {
 
   m_gameOver = true;
   m_winnerId = winnerId;
+  m_jetpackLoopSound.stop();
 }
 
 bool Jetpack::Client::GameDisplay::isJetpackActive() const {
@@ -278,3 +447,5 @@ bool Jetpack::Client::GameDisplay::isJetpackActive() const {
 void Jetpack::Client::GameDisplay::setLocalPlayerId(int id) {
   m_localPlayerId = id;
 }
+
+void Jetpack::Client::GameDisplay::setDebugMode(bool debug) { m_debugMode = debug; }

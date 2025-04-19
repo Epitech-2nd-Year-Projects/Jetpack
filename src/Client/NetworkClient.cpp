@@ -76,6 +76,10 @@ void Jetpack::Client::NetworkClient::start() {
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
   }
 
+  if (m_debugMode) {
+    m_display->setDebugMode(true);
+  }
+
   if (m_localPlayerId != -1) {
     m_display->setLocalPlayerId(m_localPlayerId);
   }

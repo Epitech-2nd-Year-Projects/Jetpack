@@ -2,7 +2,9 @@
 
 #include "../Shared/Protocol.hpp"
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include <mutex>
+#include <vector>
 
 namespace Jetpack::Client {
 
@@ -20,6 +22,7 @@ public:
   void handleGameOver(int winnerId);
 
   void setLocalPlayerId(int id);
+  void setDebugMode(bool debug);
 
   bool isJetpackActive() const;
 
@@ -27,11 +30,39 @@ private:
   sf::RenderWindow m_window;
 
   sf::Texture m_backgroundTexture;
-  sf::Texture m_playerTexture;
-  sf::Texture m_coinTexture;
-  sf::Texture m_electricTexture;
+  sf::Texture m_playerSpritesheet;
+  sf::Texture m_coinSpritesheet;
+  sf::Texture m_zapperSpritesheet;
 
-  sf::Font m_font;
+  sf::Font m_gameFont;
+
+  std::vector<sf::IntRect> m_playerRunFrames;
+  std::vector<sf::IntRect> m_playerJetpackFrames;
+  std::vector<sf::IntRect> m_coinFrames;
+  std::vector<sf::IntRect> m_zapperFrames;
+
+  sf::Clock m_animationClock;
+  int m_playerAnimFrame = 0;
+  int m_jetpackAnimFrame = 0;
+  int m_coinAnimFrame = 0;
+  int m_zapperAnimFrame = 0;
+
+  sf::SoundBuffer m_coinPickupBuffer;
+  sf::SoundBuffer m_jetpackStartBuffer;
+  sf::SoundBuffer m_jetpackLoopBuffer;
+  sf::SoundBuffer m_jetpackStopBuffer;
+  sf::SoundBuffer m_zapperBuffer;
+
+  sf::Sound m_coinPickupSound;
+  sf::Sound m_jetpackStartSound;
+  sf::Sound m_jetpackLoopSound;
+  sf::Sound m_jetpackStopSound;
+  sf::Sound m_zapperSound;
+
+  sf::Music m_gameMusic;
+
+  bool m_wasJetpacking = false;
+  bool m_debugMode = false;
 
   std::mutex m_dataMutex;
   Shared::Protocol::GameMap m_map;
@@ -50,7 +81,11 @@ private:
   void drawGameOver();
 
   void processEvents();
+  void updateAnimations();
+  void handleJetpackSounds();
 
   void loadResources();
+  void loadSounds();
+  void initializeAnimations();
 };
 } // namespace Jetpack::Client

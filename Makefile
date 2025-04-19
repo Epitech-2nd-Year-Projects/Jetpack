@@ -22,7 +22,7 @@ CXXFLAGS = -Wall -Wextra -Werror -std=c++20
 INCFLAGS_SERVER = -I./src/Server -I./src/Shared
 INCFLAGS_CLIENT = -I./src/Client -I./src/Shared
 
-LDFLAGS_CLIENT = -lsfml-graphics -lsfml-window -lsfml-system -lsfml-network
+LDFLAGS_CLIENT = -lsfml-graphics -lsfml-window -lsfml-system -lsfml-network -lsfml-audio
 LDFLAGS =
 
 CXX ?= g++
