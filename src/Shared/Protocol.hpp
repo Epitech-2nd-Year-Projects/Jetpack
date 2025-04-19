@@ -14,8 +14,8 @@ struct GameMap {
 };
 
 struct Position {
-  int x = 0;
-  int y = 0;
+  float x = 0;
+  float y = 0;
 };
 
 enum class PlayerState {
@@ -52,7 +52,7 @@ public:
   int getScore() const { return m_Score; }
   PlayerState getState() const { return m_state; }
 
-  void setPosition(int x, int y) { m_position = {x, y}; }
+  void setPosition(float x, float y) { m_position = {x, y}; }
   void setVelocityY(float velocity) { m_velocityY = velocity; }
   void setJetpacking(bool jetpacking) { m_isJetpacking = jetpacking; }
   void setScore(int score) { m_Score = score; }
