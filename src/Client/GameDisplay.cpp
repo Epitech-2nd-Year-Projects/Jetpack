@@ -271,3 +271,5 @@ void Jetpack::Client::GameDisplay::handleGameOver(int winnerId) {
 bool Jetpack::Client::GameDisplay::isJetpackActive() const {
     return m_jetpackActive;
 }
+
+void Jetpack::Client::GameDisplay::setLocalPlayerId(int id) { m_localPlayerId = id;}

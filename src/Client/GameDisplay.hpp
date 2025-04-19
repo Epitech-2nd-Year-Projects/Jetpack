@@ -19,6 +19,8 @@ namespace Jetpack::Client {
         void handlePlayerDeath(int playerId);
         void handleGameOver(int winnerId);
 
+        void setLocalPlayerId(int id);
+
         bool isJetpackActive() const;
 
     private:

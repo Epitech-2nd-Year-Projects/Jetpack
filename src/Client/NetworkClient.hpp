@@ -18,6 +18,8 @@ public:
   bool connectToServer();
   void start();
 
+  int getLocalPlayerId() const;
+
 private:
   void networkLoop();
 
@@ -31,7 +33,6 @@ private:
   void handleGameOver(const uint8_t *data, size_t length) const;
 
   void sendPlayerInput() const;
-
   int m_serverPort;
   std::string m_serverAddress;
   bool m_debugMode = false;
@@ -41,7 +42,7 @@ private:
   Shared::Protocol::GameMap m_map;
   std::vector<Shared::Protocol::Player> m_players;
 
-  std::atomic<bool> m_running;
+  std::atomic<bool> m_running{true};
   std::thread m_networkThread;
 
   std::shared_ptr<GameDisplay> m_display;

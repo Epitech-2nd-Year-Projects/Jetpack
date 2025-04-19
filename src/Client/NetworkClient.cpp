@@ -67,6 +67,14 @@ bool Jetpack::Client::NetworkClient::connectToServer() {
 void Jetpack::Client::NetworkClient::start() {
     m_display = std::make_shared<GameDisplay>();
     m_networkThread = std::thread(&NetworkClient::networkLoop, this);
+
+    while (m_localPlayerId == -1 && m_running) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+
+    if (m_localPlayerId != -1) {
+        m_display->setLocalPlayerId(m_localPlayerId);
+    }
     m_display->run();
     m_running = false;
     if (m_networkThread.joinable()) {
@@ -149,6 +157,7 @@ void Jetpack::Client::NetworkClient::handleConnectResponse(const uint8_t *data, 
 
     m_localPlayerId = data[1];
     const int totalPlayers = data[2];
+    m_running = true;
 
     if (m_debugMode) {
         std::cout << "Connected as player " << m_localPlayerId << ", total players: " << totalPlayers << std::endl;
@@ -334,3 +343,5 @@ void Jetpack::Client::NetworkClient::sendPlayerInput() const {
         std::cout << "Sent player input: jetpack " << (jetpackActive ? "active" : "inactive") << std::endl;
     }
 }
+
+int Jetpack::Client::NetworkClient::getLocalPlayerId() const { return m_localPlayerId; }
