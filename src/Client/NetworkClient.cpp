@@ -218,7 +218,9 @@ void Jetpack::Client::NetworkClient::handleGameStateUpdate(const uint8_t* data, 
     const int playerCount = data[1];
     constexpr size_t playerDataSize = 10;
 
-    if (length < 2 + playerCount * playerDataSize) return;
+    if (length < 2 + playerCount * playerDataSize) {
+        return;
+    }
 
     for (int i = 0; i < playerCount; i++) {
         const int offset = 2 + i * playerDataSize;
