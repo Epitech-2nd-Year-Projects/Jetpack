@@ -147,16 +147,6 @@ void Jetpack::Client::GameDisplay::drawPlayers() {
     } else {
       playerShape.setFillColor(sf::Color::Red);
     }
-
-    if (player.isJetpacking()) {
-      sf::RectangleShape jetpackFlame(
-          sf::Vector2f(cellWidth * 0.4f, cellHeight * 0.6f));
-      jetpackFlame.setPosition(
-          player.getPosition().x * cellWidth + cellWidth * 0.3f,
-          player.getPosition().y + cellHeight + cellHeight * 1.0f);
-      jetpackFlame.setFillColor(sf::Color(255, 150, 0));
-      m_window.draw(jetpackFlame);
-    }
     m_window.draw(playerShape);
   }
 }

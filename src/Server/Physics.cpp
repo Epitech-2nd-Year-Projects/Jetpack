@@ -20,8 +20,8 @@ void Jetpack::Server::Physics::checkBounds(
   if (player.getPosition().y < 0) {
     player.setPosition(player.getPosition().x, 0);
     player.setVelocityY(0);
-  } else if (player.getPosition().y >= map.height) {
-    player.setPosition(player.getPosition().x, map.height - 0.1f);
+  } else if (player.getPosition().y >= map.height - 1.0f) {
+    player.setPosition(player.getPosition().x, map.height - 1.0f);
     player.setVelocityY(0);
   }
 }

@@ -333,7 +333,7 @@ void Jetpack::Server::GameServer::checkGameStart() {
 
     for (auto &[_, player] : m_players) {
       player.setState(Shared::Protocol::PlayerState::READY);
-      player.setPosition(1.0f, 1.0f);
+      player.setPosition(1.0f, m_map.height - 2.0f);
     }
 
     m_broadcaster.broadcastGameStart();

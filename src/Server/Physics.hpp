@@ -10,9 +10,9 @@ public:
                           const Shared::Protocol::GameMap &map);
 
 private:
-  static constexpr float GRAVITY = 0.1f;
-  static constexpr float JETPACK_FORCE = 0.2f;
-  static constexpr float MAX_VELOCITY = 2.0f;
-  static constexpr float HORIZONTAL_SPEED = 0.2f;
+  static constexpr float GRAVITY = 0.05f;
+  static constexpr float JETPACK_FORCE = 0.1f;
+  static constexpr float MAX_VELOCITY = 0.1f;
+  static constexpr float HORIZONTAL_SPEED = 0.05f;
 };
 } // namespace Jetpack::Server
