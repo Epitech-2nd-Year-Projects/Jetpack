@@ -23,8 +23,8 @@ Jetpack::Server::GameServer::GameServer(int port, const std::string &mapFile,
 }
 
 Jetpack::Server::GameServer::~GameServer() {
-  for (const auto &playerPair : m_players) {
-    close(playerPair.first);
+  for (const auto &[playerSocket, _] : m_players) {
+    close(playerSocket);
   }
   close(m_serverSocket);
 }
@@ -194,9 +194,8 @@ void Jetpack::Server::GameServer::handleClientDisconnect(int clientSocket) {
 
   if (m_gameState == Shared::Protocol::GameState::IN_PROGRESS) {
     int activePlayers = 0;
-    for (const auto &playerPair : m_players) {
-      if (playerPair.second.getState() ==
-          Shared::Protocol::PlayerState::PLAYING) {
+    for (const auto &[_, player] : m_players) {
+      if (player.getState() == Shared::Protocol::PlayerState::PLAYING) {
         activePlayers++;
       }
     }
@@ -332,15 +331,15 @@ void Jetpack::Server::GameServer::checkGameStart() {
   if (readyPlayersCount >= MIN_PLAYERS) {
     m_gameState = Shared::Protocol::GameState::IN_PROGRESS;
 
-    for (auto &playerPair : m_players) {
-      playerPair.second.setState(Shared::Protocol::PlayerState::READY);
+    for (auto &[_, player] : m_players) {
+      player.setState(Shared::Protocol::PlayerState::READY);
 
       constexpr float startX = 1.0f;
       const float startY = m_map.height / 2.0f;
 
-      playerPair.second.setPosition(startX, startY);
-      playerPair.second.setVelocityY(0.0f);
-      playerPair.second.setScore(0);
+      player.setPosition(startX, startY);
+      player.setVelocityY(0.0f);
+      player.setScore(0);
     }
 
     m_broadcaster.broadcastGameStart();
@@ -356,22 +355,19 @@ void Jetpack::Server::GameServer::updateGameState() {
   bool allReady = true;
   bool anyPlaying = false;
 
-  for (auto &playerPair : m_players) {
-    if (playerPair.second.getState() ==
-        Shared::Protocol::PlayerState::PLAYING) {
+  for (const auto &[_, player] : m_players) {
+    if (player.getState() == Shared::Protocol::PlayerState::PLAYING) {
       anyPlaying = true;
-    } else if (playerPair.second.getState() ==
-               Shared::Protocol::PlayerState::READY) {
+    } else if (player.getState() == Shared::Protocol::PlayerState::READY) {
     } else {
       allReady = false;
     }
   }
 
   if (allReady && !anyPlaying) {
-    for (auto &playerPair : m_players) {
-      if (playerPair.second.getState() ==
-          Shared::Protocol::PlayerState::READY) {
-        playerPair.second.setState(Shared::Protocol::PlayerState::PLAYING);
+    for (auto &[_, player] : m_players) {
+      if (player.getState() == Shared::Protocol::PlayerState::READY) {
+        player.setState(Shared::Protocol::PlayerState::PLAYING);
       }
     }
     m_broadcaster.broadcastGameState();
@@ -385,9 +381,7 @@ void Jetpack::Server::GameServer::updateGameState() {
 }
 
 void Jetpack::Server::GameServer::updatePlayers() {
-  for (auto &playerPair : m_players) {
-    Shared::Protocol::Player &player = playerPair.second;
-
+  for (auto &[_, player] : m_players) {
     if (player.getState() != Shared::Protocol::PlayerState::PLAYING) {
       continue;
     }
@@ -402,9 +396,7 @@ void Jetpack::Server::GameServer::updatePlayers() {
 }
 
 void Jetpack::Server::GameServer::checkCollisions() {
-  for (auto &playerPair : m_players) {
-    Shared::Protocol::Player &player = playerPair.second;
-
+  for (auto &[_, player] : m_players) {
     if (player.getState() != Shared::Protocol::PlayerState::PLAYING) {
       continue;
     }
@@ -436,9 +428,7 @@ void Jetpack::Server::GameServer::checkGameEnd() {
   bool anyDead = false;
   int activePlayersCount = 0;
 
-  for (const auto &playerPair : m_players) {
-    const Shared::Protocol::Player &player = playerPair.second;
-
+  for (const auto &[_, player] : m_players) {
     if (player.getState() == Shared::Protocol::PlayerState::PLAYING) {
       allFinished = false;
       activePlayersCount++;
@@ -456,9 +446,7 @@ void Jetpack::Server::GameServer::checkGameEnd() {
     int winnerId = -1;
     int highestScore = -1;
 
-    for (const auto &playerPair : m_players) {
-      const Shared::Protocol::Player &player = playerPair.second;
-
+    for (const auto &[_, player] : m_players) {
       if (anyDead && player.getState() != Shared::Protocol::PlayerState::DEAD) {
         winnerId = player.getId();
         break;

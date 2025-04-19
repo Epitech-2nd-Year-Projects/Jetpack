@@ -10,12 +10,12 @@ void Jetpack::Server::Broadcaster::broadcastGameOver(int winnerId) {
   buffer[1] = (winnerId > 0) ? 1 : 0;
   buffer[2] = (winnerId > 0) ? winnerId : 0;
 
-  for (const auto &playerPair : m_serverPlayersReference) {
-    send(playerPair.first, buffer, sizeof(buffer), 0);
+  for (const auto &[playerSocket, _] : m_serverPlayersReference) {
+    send(playerSocket, buffer, sizeof(buffer), 0);
     if (m_debugMode) {
       std::cout << std::format(
           "Debug: Sent game over broadcast to client {} - Buffer: ",
-          playerPair.first);
+          playerSocket);
       for (size_t i = 0; i < sizeof(buffer); i++) {
         std::cout << std::format("{:02X} ", buffer[i]);
       }
@@ -29,12 +29,12 @@ void Jetpack::Server::Broadcaster::broadcastPlayerDeath(int playerId) {
   buffer[0] = static_cast<uint8_t>(Shared::Protocol::PacketType::PLAYER_DEATH);
   buffer[1] = playerId;
 
-  for (const auto &playerPair : m_serverPlayersReference) {
-    send(playerPair.first, buffer, sizeof(buffer), 0);
+  for (const auto &[playerSocket, _] : m_serverPlayersReference) {
+    send(playerSocket, buffer, sizeof(buffer), 0);
     if (m_debugMode) {
       std::cout << std::format(
           "Debug: Sent player death broadcast to client {} - Buffer: ",
-          playerPair.first);
+          playerSocket);
       for (size_t i = 0; i < sizeof(buffer); i++) {
         std::cout << std::format("{:02X} ", buffer[i]);
       }
@@ -60,12 +60,12 @@ void Jetpack::Server::Broadcaster::broadcastCoinCollected(int playerId, int x,
                           ->first)
                   .getScore();
 
-  for (const auto &playerPair : m_serverPlayersReference) {
-    send(playerPair.first, buffer, sizeof(buffer), 0);
+  for (const auto &[playerSocket, _] : m_serverPlayersReference) {
+    send(playerSocket, buffer, sizeof(buffer), 0);
     if (m_debugMode) {
       std::cout << std::format(
           "Debug: Sent coin collected broadcast to client {} - Buffer: ",
-          playerPair.first);
+          playerSocket);
       for (size_t i = 0; i < sizeof(buffer); i++) {
         std::cout << std::format("{:02X} ", buffer[i]);
       }
@@ -84,9 +84,7 @@ void Jetpack::Server::Broadcaster::broadcastGameState() {
   buffer[1] = m_serverPlayersReference.size();
 
   size_t offset = 2;
-  for (const auto &playerPair : m_serverPlayersReference) {
-    const Shared::Protocol::Player &player = playerPair.second;
-
+  for (const auto &[_, player] : m_serverPlayersReference) {
     buffer[offset] = player.getId();
     buffer[offset + 1] = static_cast<uint8_t>(player.getState());
 
@@ -110,12 +108,12 @@ void Jetpack::Server::Broadcaster::broadcastGameState() {
     offset += playerDataSize;
   }
 
-  for (const auto &playerPair : m_serverPlayersReference) {
-    send(playerPair.first, buffer.data(), buffer.size(), 0);
+  for (const auto &[playerSocket, _] : m_serverPlayersReference) {
+    send(playerSocket, buffer.data(), buffer.size(), 0);
     if (m_debugMode) {
       std::cout << std::format(
           "Debug: Sent game state update broadcast to client {} - Buffer: ",
-          playerPair.first);
+          playerSocket);
       for (size_t i = 0; i < buffer.size(); i++) {
         std::cout << std::format("{:02X} ", buffer[i]);
       }
@@ -130,12 +128,12 @@ void Jetpack::Server::Broadcaster::broadcastGameStart() {
   buffer[1] = m_serverPlayersReference.size();
   buffer[2] = 0;
 
-  for (const auto &playerPair : m_serverPlayersReference) {
-    send(playerPair.first, buffer, sizeof(buffer), 0);
+  for (const auto &[playerSocket, _] : m_serverPlayersReference) {
+    send(playerSocket, buffer, sizeof(buffer), 0);
     if (m_debugMode) {
       std::cout << std::format(
           "Debug: Sent game start broadcast to client {} - Buffer: ",
-          playerPair.first);
+          playerSocket);
       for (size_t i = 0; i < sizeof(buffer); i++) {
         std::cout << std::format("{:02X} ", buffer[i]);
       }
