@@ -1,6 +1,7 @@
 #include "GameDisplay.hpp"
 
 #include <iostream>
+#include <cmath>
 
 Jetpack::Client::GameDisplay::GameDisplay(int windowWidth, int windowHeight)
     : m_window(sf::VideoMode(windowWidth, windowHeight), "Jetpack") {
@@ -36,38 +37,102 @@ void Jetpack::Client::GameDisplay::loadResources() {
     std::cerr << "Failed to load zapper_sprite_sheet.png!" << std::endl;
   }
 
-  loadParallaxBackgrounds();
+  initializeParallaxBackgrounds();
   loadSounds();
   initializeAnimations();
 }
 
-void Jetpack::Client::GameDisplay::loadParallaxBackgrounds() {
-  if (m_backgroundTexture.getSize().x > 0) {
+void Jetpack::Client::GameDisplay::initializeParallaxBackgrounds() {
+  if (m_backgroundTexture.getSize().x == 0) {
+    std::cerr << "Background texture is invalid!" << std::endl;
+    return;
+  }
 
-    sf::Texture farBackground = m_backgroundTexture;
-    farBackground.setRepeated(true);
-    m_parallaxTextures.push_back(farBackground);
-    m_parallaxSpeeds.push_back(0.2f);
+  
+  m_parallaxLayers.clear();
+  m_parallaxSpeeds.clear();
 
-    sf::Texture midBackground = m_backgroundTexture;
-    midBackground.setRepeated(true);
-    m_parallaxTextures.push_back(midBackground);
-    m_parallaxSpeeds.push_back(0.5f);
+  
+  const std::vector<float> speeds = {0.2f, 0.4f, 0.6f, 0.8f};
 
-    sf::Texture nearBackground = m_backgroundTexture;
-    nearBackground.setRepeated(true);
-    m_parallaxTextures.push_back(nearBackground);
-    m_parallaxSpeeds.push_back(0.8f);  
+  
+  const float cameraZoom = 2.0f;
+
+  
+  if (m_map.width > 0) {
+    m_visibleMapWidth = m_map.width / cameraZoom;
+  } else {
+    
+    m_visibleMapWidth = 10.0f; 
+  }
+
+  
+  for (size_t i = 0; i < speeds.size(); i++) {
+    sf::Sprite layer(m_backgroundTexture);
+
+    
+    float baseScale = static_cast<float>(m_window.getSize().y) / m_backgroundTexture.getSize().y;
+
+    
+    baseScale *= 1.2f;
+
+    if (i == 0) {
+      
+      layer.setScale(baseScale * 0.95f, baseScale * 0.95f);
+      layer.setColor(sf::Color(100, 100, 180, 150));
+    } else if (i == 1) {
+      layer.setScale(baseScale * 0.97f, baseScale * 0.97f);
+      layer.setColor(sf::Color(150, 150, 200, 180));
+    } else if (i == 2) {
+      layer.setScale(baseScale * 0.99f, baseScale * 0.99f);
+      layer.setColor(sf::Color(200, 200, 230, 210));
+    } else {
+      
+      layer.setScale(baseScale, baseScale);
+      layer.setColor(sf::Color(255, 255, 255, 255));
+    }
+
+    m_parallaxLayers.push_back(layer);
+    m_parallaxSpeeds.push_back(speeds[i]);
   }
 }
 
+
 void Jetpack::Client::GameDisplay::updateParallaxBackgrounds(float deltaTime) {
   
-  m_backgroundScrollPosition += 50.0f * deltaTime; 
+  const float cameraZoom = 2.0f; 
+  const float cameraOffsetX = 0.3f; 
 
   
-  if (m_backgroundScrollPosition > 10000.0f) {
-    m_backgroundScrollPosition = 0.0f;
+  float playerX = 0.0f;
+  std::lock_guard<std::mutex> lock(m_dataMutex);
+
+  for (const auto &player : m_players) {
+    if (player.getId() == m_localPlayerId) {
+      playerX = player.getPosition().x;
+      break;
+    }
+  }
+
+  
+  if (m_map.width > 0) {
+    
+    m_visibleMapWidth = m_map.width / cameraZoom;
+
+    
+    float targetCameraX = playerX - (m_visibleMapWidth * cameraOffsetX);
+
+    
+    targetCameraX = std::max(0.0f, targetCameraX);
+    targetCameraX = std::min(targetCameraX, static_cast<float>(m_map.width - m_visibleMapWidth));
+
+    
+    const float cameraLerpFactor = 5.0f * deltaTime;
+    m_cameraPositionX = m_cameraPositionX + (targetCameraX - m_cameraPositionX) * cameraLerpFactor;
+  } else {
+    
+    m_backgroundScrollPosition += 50.0f * deltaTime;
+    m_cameraPositionX = m_backgroundScrollPosition;
   }
 }
 
@@ -223,51 +288,42 @@ void Jetpack::Client::GameDisplay::render() {
 }
 
 void Jetpack::Client::GameDisplay::drawParallaxBackgrounds() {
-  if (m_parallaxTextures.empty()) {
-    sf::Sprite background(m_backgroundTexture);
-    float scaleX = static_cast<float>(m_window.getSize().x) / m_backgroundTexture.getSize().x;
-    float scaleY = static_cast<float>(m_window.getSize().y) / m_backgroundTexture.getSize().y;
-    background.setScale(scaleX, scaleY);
-    m_window.draw(background);
-    return;
-  }
-
+  
   sf::RectangleShape darkBackground(sf::Vector2f(m_window.getSize().x, m_window.getSize().y));
   darkBackground.setFillColor(sf::Color(20, 20, 50));
   m_window.draw(darkBackground);
 
-  for (size_t i = 0; i < m_parallaxTextures.size(); i++) {
-    sf::Sprite parallaxLayer(m_parallaxTextures[i]);
-
-    float layerPos = -m_backgroundScrollPosition * m_parallaxSpeeds[i];
-
-    parallaxLayer.setTextureRect(sf::IntRect(
-      static_cast<int>(layerPos) % m_parallaxTextures[i].getSize().x,
-      0,
-      m_window.getSize().x + m_parallaxTextures[i].getSize().x,
-      m_parallaxTextures[i].getSize().y
-    ));
+  
+  for (size_t i = 0; i < m_parallaxLayers.size(); i++) {
+    
+    float parallaxOffset = m_cameraPositionX * m_parallaxSpeeds[i];
 
     
-    float scaleX = static_cast<float>(m_window.getSize().x) / m_backgroundTexture.getSize().x;
-    float scaleY = static_cast<float>(m_window.getSize().y) / m_backgroundTexture.getSize().y;
-    parallaxLayer.setScale(scaleX, scaleY);
+    float spriteWidth = m_backgroundTexture.getSize().x * m_parallaxLayers[i].getScale().x;
+    int repetitions = static_cast<int>(std::ceil(m_window.getSize().x / spriteWidth)) + 2;
 
-    if (i == 0) {
-      parallaxLayer.setColor(sf::Color(100, 100, 180, 150));
-    } else if (i == 1) {
-      parallaxLayer.setColor(sf::Color(180, 180, 220, 200));
-    } else if (i == 2) {
-      parallaxLayer.setColor(sf::Color(255, 255, 255, 255));
+    
+    float startX = -fmodf(parallaxOffset, spriteWidth);
+
+    
+    float verticalPosition = (m_window.getSize().y - m_backgroundTexture.getSize().y * m_parallaxLayers[i].getScale().y) / 2.0f;
+
+    
+    for (int j = -1; j < repetitions; j++) {
+      float posX = startX + j * spriteWidth;
+      m_parallaxLayers[i].setPosition(posX, verticalPosition);
+
+      
+      if (posX < m_window.getSize().x && posX + spriteWidth > 0) {
+        m_window.draw(m_parallaxLayers[i]);
+      }
     }
-
-    m_window.draw(parallaxLayer);
   }
 
+  
   sf::RectangleShape gradientOverlay(sf::Vector2f(m_window.getSize().x, m_window.getSize().y));
-  sf::Color topColor(0, 0, 50, 50);
-  sf::Color bottomColor(0, 0, 30, 80);
-
+  sf::Color topColor(0, 0, 50, 30);
+  sf::Color bottomColor(0, 0, 30, 50);
   gradientOverlay.setFillColor(bottomColor);
   m_window.draw(gradientOverlay);
 }
@@ -299,7 +355,15 @@ void Jetpack::Client::GameDisplay::drawPlayers() {
     return;
   }
 
-  float cellWidth = static_cast<float>(m_window.getSize().x) / m_map.width;
+  
+  const float cameraZoom = 2.0f;
+
+  
+  float visibleMapWidth = m_map.width / cameraZoom;
+
+  
+  float cellWidth = static_cast<float>(m_window.getSize().x) / visibleMapWidth;
+
   float windowHeight = static_cast<float>(m_window.getSize().y);
   float topOffset = m_topBoundary * (windowHeight / m_backgroundHeight);
   float bottomOffset = m_bottomBoundary * (windowHeight / m_backgroundHeight);
@@ -308,6 +372,14 @@ void Jetpack::Client::GameDisplay::drawPlayers() {
   float cellHeight = playableHeight / m_map.height;
 
   for (const auto &player : m_players) {
+    
+    float screenX = (player.getPosition().x - m_cameraPositionX) * cellWidth;
+
+    
+    if (screenX < -cellWidth || screenX > m_window.getSize().x + cellWidth) {
+      continue;
+    }
+
     sf::Sprite playerSprite(m_playerSpritesheet);
 
     if (player.isJetpacking()) {
@@ -321,7 +393,7 @@ void Jetpack::Client::GameDisplay::drawPlayers() {
 
     float spriteWidth = playerSprite.getTextureRect().width * scale;
     float spriteHeight = playerSprite.getTextureRect().height * scale;
-    float xPos = player.getPosition().x * cellWidth + (cellWidth - spriteWidth) / 2;
+    float xPos = screenX + (cellWidth - spriteWidth) / 2;
 
     float yOffset = 10.0f;
     float relativePos = player.getPosition().y / m_map.height;
@@ -341,7 +413,7 @@ void Jetpack::Client::GameDisplay::drawPlayers() {
     if (m_debugMode) {
       sf::RectangleShape hitbox;
       hitbox.setSize(sf::Vector2f(cellWidth * 0.8f, cellHeight * 0.8f));
-      hitbox.setPosition(player.getPosition().x * cellWidth + cellWidth * 0.1f,
+      hitbox.setPosition(screenX + cellWidth * 0.1f,
                          topOffset + (player.getPosition().y / m_map.height) * playableHeight + cellHeight * 0.1f);
       hitbox.setFillColor(sf::Color(0, 0, 0, 0));
       hitbox.setOutlineColor(sf::Color::Red);
@@ -357,17 +429,26 @@ void Jetpack::Client::GameDisplay::drawMap() {
     return;
   }
 
-  float cellWidth = static_cast<float>(m_window.getSize().x) / m_map.width;
+  const float cameraZoom = 2.0f;
+  float visibleMapWidth = m_map.width / cameraZoom;
+  float cellWidth = static_cast<float>(m_window.getSize().x) / visibleMapWidth;
   float windowHeight = static_cast<float>(m_window.getSize().y);
   float topOffset = m_topBoundary * (windowHeight / m_backgroundHeight);
   float bottomOffset = m_bottomBoundary * (windowHeight / m_backgroundHeight);
   float playableHeight = windowHeight - topOffset - bottomOffset;
 
   float cellHeight = playableHeight / m_map.height;
+  
+  int startCol = static_cast<int>(m_cameraPositionX);
+  startCol = std::max(0, startCol);
+  
+  int endCol = static_cast<int>(m_cameraPositionX + visibleMapWidth + 1);
+  endCol = std::min(endCol, m_map.width);
 
   for (int i = 0; i < m_map.height; i++) {
-    for (int j = 0; j < m_map.width; j++) {
-      float xPos = j * cellWidth;
+    for (int j = startCol; j < endCol; j++) {
+      
+      float xPos = (j - m_cameraPositionX) * cellWidth;
       float yPos = topOffset + i * cellHeight;
 
       if (m_debugMode && m_map.tiles[i][j] != Shared::Protocol::TileType::EMPTY) {

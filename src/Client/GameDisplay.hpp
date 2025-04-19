@@ -93,11 +93,15 @@ private:
   void loadSounds();
   void initializeAnimations();
 
-  std::vector<sf::Texture> m_parallaxTextures;
+  std::vector<sf::Sprite> m_parallaxLayers;
   std::vector<float> m_parallaxSpeeds;
   float m_backgroundScrollPosition = 0.0f;
+  float m_cameraPositionX = 0.0f;
+  float m_visibleMapWidth = 0.0f;
+  float m_cameraZoom = 2.0f;
 
-  void loadParallaxBackgrounds();
+
+  void initializeParallaxBackgrounds();
   void updateParallaxBackgrounds(float deltaTime);
   void drawParallaxBackgrounds();
 };
